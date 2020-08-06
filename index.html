@@ -72,29 +72,99 @@
 <div class="story-body">
     <h2>Here is a chart</h2>
     <p>I have the <code>script</code> tag that points to <code>chart-01.js</code> inside of this partial</p>
-    <div id="chart-1"></div>
+    <div id="chart-1">
+		<script>
+			var width = 700,
+				height = 500;
+
+			var svg = d3.select("#chart-1")
+				.append("svg")
+				// .attr("class",'dark-theme')
+				.attr("width",width)
+				.attr("height",height);
+
+			var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+			var simulation = d3.forceSimulation()
+				.force("link",d3.forceLink().id(function(d){return d.id;}))
+				.force("charge",d3.forceManyBody())
+				.force("center",d3.forceCenter(width/2,height/1.7));
+
+			d3.json("miserables.json", function(graph){
+
+				var link = svg.selectAll("line")
+					.data(graph.links)
+					.enter().append("line")
+					// .attr("class",'linkstyle')
+					// for some reason this class does not implement. the below two lines get the job done though. 
+					.attr("stroke","#999")
+					.attr("stroke-opacity",0.6)
+					.attr("stroke-width",function(d){return Math.sqrt(d.value); });
+
+				var node = svg.selectAll("g")
+					.data(graph.nodes)
+					.enter().append("g")
+					.attr("class","nodes");
+
+				var circles = node.append("circle")
+					.attr("r",5)
+					.attr("fill",function(d) {return color(d.group); })
+					.call(d3.drag()
+						.on("start",dragstarted)
+						.on("drag",dragged)
+						.on("end",dragended));
+
+					
+				var labels = node.append("text")
+					.text(function(d){return d.id; })
+					.attr('x',6)
+					.attr('y',3);
+
+				node.append("title")
+					.text(function(d) {return d.id; });
+
+				simulation
+					.nodes(graph.nodes)
+					.on("tick",ticked);
+
+				simulation.force("link")
+					.links(graph.links);
+
+				function ticked(){
+					link
+						.attr("x1", function(d){return d.source.x; })
+						.attr("y1", function(d){return d.source.y; })
+						.attr("x2", function(d){return d.target.x; })
+						.attr("y2", function(d){return d.target.y; });
+
+					node
+						.attr("transform", function(d){
+							return "translate("+ d.x + ","+d.y+")";
+						})
+				}
+			});
+
+			function dragstarted(d) {
+			  if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+			  d.fx = d.x;
+			  d.fy = d.y;
+			}
+
+			function dragged(d) {
+			  d.fx = d3.event.x;
+			  d.fy = d3.event.y;
+			}
+
+			function dragended(d) {
+			  if (!d3.event.active) simulation.alphaTarget(0);
+			  d.fx = null;
+			  d.fy = null;
+			}
+		
+
+	</script>
+	</div>
 </div>
-
-<!-- <script src="/chart-01.08e79ccf.js"></script> -->
-
-<script src="https://d3js.org/d3.v5.min.js" charset="utf-8"></script>
-<script>
-	var width = 400;
-	var height = 700;
-
-	var svg = d3.select("#chart-1")
-				.append('svg')
-				.attr('width',width)
-				.attr('height',height);
-
-	svg.append('circle')
-		.attr('cx',200)
-		.attr('cy',400)
-		.attr('r',100)
-		.attr('fill','pink');
-
-</script>
-
 <!-- 
   If you want to use something exported from ai2html...
     1. Rename the exported .html file to .hbs
